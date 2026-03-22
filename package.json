@@ -1,0 +1,28 @@
+{
+  "name": "graduation-game",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jaguarbutter3/graduation-game.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/jaguarbutter3/graduation-game/issues"
+  },
+  "homepage": "https://github.com/jaguarbutter3/graduation-game#readme",
+  "devDependencies": {
+    "@eslint/css": "^1.0.0",
+    "@eslint/js": "^10.0.1",
+    "@eslint/json": "^1.2.0",
+    "@eslint/markdown": "^7.5.1",
+    "eslint": "^10.1.0",
+    "globals": "^17.4.0"
+  }
+}

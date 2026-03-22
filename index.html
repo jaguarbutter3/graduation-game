@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <title>卒業おめでとうゲーム</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser-arcade-physics.min.js"></script>
+
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        background-color: #000;
+        overflow: hidden;
+      }
+      canvas {
+        display: block;
+        margin: 0 auto;
+      }
+    </style>
+  </head>
+  <body>
+    <script>
+      const config = {
+        type: Phaser.AUTO,
+        width: 800,
+        height: 400,
+        physics: {
+          default: 'arcade',
+          arcade: { gravity: { y: 1000 }, debug: false },
+        },
+        scene: { preload: preload, create: create, update: update },
+      };
+
+      const game = new Phaser.Game(config);
+      let player;
+      let cursors;
+      let obstacles;
+      let score = 0;
+      let scoreText;
+      let isGameOver = false;
+
+      function preload() {
+        // 画像がない場合は、ここで何も書かなくても四角形（Graphic）で代用可能です
+      }
+
+      function create() {
+        // 背景色（空色）
+        this.cameras.main.setBackgroundColor('#87CEEB');
+
+        // 地面の作成（簡易的な四角）
+        const ground = this.add.rectangle(400, 380, 800, 40, 0x654321);
+        this.physics.add.existing(ground, true); // 静止物体として物理設定
+
+        // プレイヤーの作成（青い四角）
+        player = this.add.rectangle(100, 300, 40, 40, 0x0000ff);
+        this.physics.add.existing(player);
+        player.body.setCollideWorldBounds(true); // 画面外に出ないように
+
+        // 地面との衝突設定
+        this.physics.add.collider(player, ground);
+
+        // 障害物グループ
+        obstacles = this.physics.add.group();
+
+        // スコア表示
+        scoreText = this.add.text(16, 16, 'Score: 0', { fontSize: '32px', fill: '#000' });
+
+        // 入力設定（クリック or スペースキー）
+        this.input.on('pointerdown', jump);
+        cursors = this.input.keyboard.createCursorKeys();
+
+        // 障害物を定期的に生成（1.5秒ごと）
+        this.time.addEvent({
+          delay: 1500,
+          callback: spawnObstacle,
+          callbackScope: this,
+          loop: true,
+        });
+
+        // プレイヤーと障害物の衝突判定
+        this.physics.add.overlap(player, obstacles, hitObstacle, null, this);
+      }
+
+      function update() {
+        if (isGameOver) return;
+
+        // キーボード操作（PC用）
+        if (cursors.space.isDown) {
+          jump();
+        }
+
+        // スコア加算（生存時間に応じて）
+        score += 1;
+        scoreText.setText('Score: ' + Math.floor(score / 10));
+
+        // クリア判定（例：500点）
+        if (Math.floor(score / 10) >= 500) {
+          showWinMessage(this);
+        }
+      }
+
+      function jump() {
+        if (player.body.touching.down) {
+          player.body.setVelocityY(-500); // 上方向に速度を与える
+        }
+      }
+
+      function spawnObstacle() {
+        if (isGameOver) return;
+        const obstacle = this.add.rectangle(850, 340, 30, 50, 0xff0000);
+        obstacles.add(obstacle);
+        this.physics.add.existing(obstacle);
+        obstacle.body.setVelocityX(-300); // 左に流す
+      }
+
+      function hitObstacle() {
+        this.physics.pause();
+        isGameOver = true;
+        this.add
+          .text(400, 200, 'GAME OVER\nTry Again!', {
+            fontSize: '48px',
+            fill: '#f00',
+            align: 'center',
+          })
+          .setOrigin(0.5);
+      }
+
+      function showWinMessage(scene) {
+        scene.physics.pause();
+        isGameOver = true;
+        scene.add
+          .text(400, 200, '卒業おめでとう！\n新たな門出に幸あれ', {
+            fontSize: '48px',
+            fill: '#fff',
+            backgroundColor: '#ff69b4',
+            padding: { x: 20, y: 10 },
+            align: 'center',
+          })
+          .setOrigin(0.5);
+      }
+    </script>
+  </body>
+</html>
