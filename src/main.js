@@ -17,15 +17,33 @@ import { drawHUD, drawFlash, drawTitle, drawGameOver, drawClear } from './render
 
 import { startGame, retry, checkCollisions } from './game.js';
 
+/**
+ * ★ 修正ポイント: AudioContext を有効化する関数
+ * スマホやブラウザの制限を解除するため、ユーザーの最初の操作で実行する
+ */
+const initAudio = () => {
+  const adx = getActx();
+  if (adx && adx.state === 'suspended') {
+    adx.resume().then(() => {
+      console.log('AudioContext resumed successfully');
+    });
+  }
+  // 一度実行すれば良いのでイベントを解除
+  window.removeEventListener('pointerdown', initAudio);
+  window.removeEventListener('touchstart', initAudio);
+  window.removeEventListener('keydown', initAudio);
+};
+
+// 起動時、あらゆる操作をオーディオ有効化のトリガーにする
+window.addEventListener('pointerdown', initAudio);
+window.addEventListener('touchstart', initAudio);
+window.addEventListener('keydown', initAudio);
+
 // 入力：クリック・タップ
 canvas.addEventListener('pointerdown', (e) => {
   e.preventDefault();
-  try {
-    getActx().resume();
-  } catch {
-    // ブラウザの自動再生制限によるエラーを許容
-  }
 
+  // マウス/タップ座標の計算
   const rect = canvas.getBoundingClientRect();
   const mx = (e.clientX - rect.left) * (GAME_W / rect.width);
   const my = (e.clientY - rect.top) * (GAME_H / rect.height);
@@ -64,15 +82,10 @@ canvas.addEventListener('pointerdown', (e) => {
   } else if (State.gState === 'gameover' || State.gState === 'clear') {
     retry();
   }
-}); // ← ここが合体して消えていたので直しました
+});
 
 // 入力：キーボード
 window.addEventListener('keydown', (e) => {
-  try {
-    getActx().resume();
-  } catch {
-    // ignore
-  }
   if (State.gState === 'title') {
     if (e.code === 'ArrowLeft') {
       State.set('selectedChar', (State.selectedChar - 1 + CHAR_LIST.length) % CHAR_LIST.length);
@@ -102,6 +115,13 @@ function loop(now) {
     ctx.fillStyle = '#88ff44';
     ctx.textAlign = 'center';
     ctx.fillText('LOADING  ' + Math.round(getProgress() * 100) + '%', GAME_W / 2, GAME_H / 2);
+
+    // ★ スマホ等で40%で止まっている場合、
+    // 「画面をタップしてね」という指示を出すと親切です
+    if (getProgress() > 0.35 && getProgress() < 1.0) {
+      ctx.font = '12px sans-serif';
+      ctx.fillText('Tap to Start Audio', GAME_W / 2, GAME_H / 2 + 40);
+    }
     return;
   }
 
@@ -115,7 +135,6 @@ function loop(now) {
     updateClaps(dt);
     updateEffects(dt);
     if (State.comboTime > 0) State.set('comboTime', Math.max(0, State.comboTime - dt));
-    // 無敵タイマーの更新
     if (State.invincibleTime > 0)
       State.set('invincibleTime', Math.max(0, State.invincibleTime - dt));
     checkCollisions();
@@ -132,7 +151,6 @@ function loop(now) {
     player.draw();
     drawTitle();
   } else {
-    updateClaps(0); // 描画位置更新
     claps.forEach(drawClap);
     obstacles.forEach(drawObstacle);
     player.draw();
@@ -145,6 +163,8 @@ function loop(now) {
 }
 
 requestAnimationFrame(loop);
+
+// アセット読み込み開始
 loadAll(() => {
   setTimeout(() => State.set('gState', 'title'), 200);
 });

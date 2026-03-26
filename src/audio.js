@@ -8,8 +8,9 @@ let bgmNode = null;
 
 /** AudioContext を取得（ブラウザ互換性を考慮） */
 export function getActx() {
-  if (!_actx) _actx = new AudioContext();
-  if (_actx.state === 'suspended') _actx.resume();
+  if (!_actx) {
+    _actx = new (window.AudioContext || window.webkitAudioContext)();
+  }
   return _actx;
 }
 
