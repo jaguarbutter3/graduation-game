@@ -14,7 +14,7 @@ export const ASSET_PATH = {
   sfxJump2: 'assets/sfx_jump-high.ogg',
   sfxClap: 'assets/clap.wav',
   sfxHurt: 'assets/sfx_hurt.ogg',
-  sfxMagic: 'assets/sfx_magic.wav',
+  sfxMagic: 'assets/sfx_magic.ogg',
   sfxSelect: 'assets/sfx_select.ogg',
   bgm: 'assets/bgm.mp3',
 };
