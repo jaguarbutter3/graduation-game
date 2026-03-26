@@ -1,11 +1,9 @@
-// ============================================================
-//  state.js  ─ ゲーム全体で共有する可変状態
-// ============================================================
 import { GAME_SEC, CHAR_LIST } from './config.js';
 
 export let gState = 'loading';
 export let score = 0;
 export let timeLeft = GAME_SEC;
+export let messagesLeft = 0; // 追加
 export let combo = 0;
 export let comboTime = 0;
 export let flashAlpha = 0;
@@ -31,6 +29,9 @@ export function set(key, value) {
     case 'timeLeft':
       timeLeft = value;
       break;
+    case 'messagesLeft':
+      messagesLeft = value;
+      break; // 追加
     case 'combo':
       combo = value;
       break;

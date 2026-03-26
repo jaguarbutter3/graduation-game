@@ -1,12 +1,3 @@
-// ============================================================
-//  entities/obstacle.js  ─ 卒業メッセージカード障害物
-//
-//  ・MESSAGES配列からランダムにメッセージを選んでカードを生成
-//  ・カード高さはメッセージ行数で自動計算
-//  ・短いカード（低）→ 上ジャンプで避ける
-//  ・高いカード（高）→ 下をくぐる（2段ジャンプ）
-//  ・画像不要・Canvas描画のみ
-// ============================================================
 import {
   GAME_W,
   GROUND_Y,
@@ -20,42 +11,38 @@ import {
   calcCardH,
 } from '../config.js';
 import { ctx } from '../canvas.js';
+import * as State from '../state.js';
 
 export const obstacles = [];
-
 let obsTimer = 0;
 let obsInterval = 2.2;
-
-// メッセージインデックスを順番に出す（ランダムではなく順番でメッセージを見せる）
 let msgIndex = 0;
-
-function nextMessage() {
-  const msg = MESSAGES[msgIndex % MESSAGES.length];
-  msgIndex++;
-  return msg;
-}
 
 export function updateObstacles(dt) {
   obsTimer += dt;
   if (obsTimer >= obsInterval) {
     obsTimer = 0;
 
-    const msg = nextMessage();
-    const h = calcCardH(msg);
+    // メッセージが残っている場合のみ生成
+    if (msgIndex < MESSAGES.length) {
+      const msg = MESSAGES[msgIndex];
+      const h = calcCardH(msg);
+      const level = Math.floor(Math.random() * 3);
+      const yPos = GROUND_Y - h - level * 85;
 
-    // 高さを 0:低, 1:中, 2:高 の3パターンにする
-    const level = Math.floor(Math.random() * 3);
-    // 高い位置(level 2)なら、プレイヤーが下をくぐれるように y を小さくする
-    const yPos = GROUND_Y - h - level * 85;
+      obstacles.push({
+        x: GAME_W + 60,
+        y: yPos,
+        w: MSG_CARD_W,
+        h,
+        msg,
+        age: 0,
+      });
 
-    obstacles.push({
-      x: GAME_W + 60,
-      y: yPos,
-      w: MSG_CARD_W,
-      h,
-      msg,
-      age: 0,
-    });
+      msgIndex++;
+      // 残り数を更新（生成待ちの数）
+      State.set('messagesLeft', MESSAGES.length - msgIndex);
+    }
   }
 
   for (let i = obstacles.length - 1; i >= 0; i--) {
@@ -68,26 +55,17 @@ export function updateObstacles(dt) {
 
 export function drawObstacle(o) {
   const { x, y, w, h, msg } = o;
-
   ctx.save();
-
   const drawY = y;
-
-  // --- カード背景 ---
-  // 影
   ctx.shadowColor = 'rgba(0,0,0,0.4)';
   ctx.shadowBlur = 10;
   ctx.shadowOffsetY = 4;
-
-  // グラデーション背景
   const grad = ctx.createLinearGradient(x, drawY, x, drawY + h);
   grad.addColorStop(0, '#fffde8');
   grad.addColorStop(1, '#fff8cc');
   ctx.fillStyle = grad;
   _roundRect(ctx, x, drawY, w, h, MSG_CORNER_R);
   ctx.fill();
-
-  // 枠線
   ctx.shadowColor = 'transparent';
   ctx.shadowBlur = 0;
   ctx.shadowOffsetY = 0;
@@ -96,17 +74,13 @@ export function drawObstacle(o) {
   _roundRect(ctx, x, drawY, w, h, MSG_CORNER_R);
   ctx.stroke();
 
-  // --- fromヘッダー ---
   if (msg.from) {
-    // ヘッダー帯
     const hGrad = ctx.createLinearGradient(x, drawY, x, drawY + MSG_HEADER_H);
     hGrad.addColorStop(0, '#f0c040');
     hGrad.addColorStop(1, '#e0a020');
     ctx.fillStyle = hGrad;
     _roundRectTop(ctx, x, drawY, w, MSG_HEADER_H, MSG_CORNER_R);
     ctx.fill();
-
-    // from テキスト
     ctx.font = '900 12px "Noto Sans JP",sans-serif';
     ctx.fillStyle = '#fff';
     ctx.textAlign = 'center';
@@ -117,36 +91,21 @@ export function drawObstacle(o) {
     ctx.shadowBlur = 0;
   }
 
-  // --- メッセージ本文 ---
   const headerH = msg.from ? MSG_HEADER_H : 0;
   const textStartY = drawY + headerH + MSG_PAD_Y + MSG_LINE_H / 2;
-
   ctx.font = `900 ${_fontSize(msg.lines.length)}px "Noto Sans JP",sans-serif`;
   ctx.fillStyle = '#443300';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-
   msg.lines.forEach((line, i) => {
-    ctx.fillText(
-      line,
-      x + w / 2,
-      textStartY + i * MSG_LINE_H,
-      w - 16, // 最大幅でクリップ
-    );
+    ctx.fillText(line, x + w / 2, textStartY + i * MSG_LINE_H, w - 16);
   });
-
   ctx.restore();
 }
 
-/** 当たり判定矩形を返す（カードより一回り小さい） */
 export function getObstacleHitRect(o) {
   const inset = 8;
-  return {
-    x: o.x + inset,
-    y: o.y + inset,
-    w: o.w - inset * 2,
-    h: o.h - inset * 2,
-  };
+  return { x: o.x + inset, y: o.y + inset, w: o.w - inset * 2, h: o.h - inset * 2 };
 }
 
 export function resetObstacles() {
@@ -154,11 +113,9 @@ export function resetObstacles() {
   obsTimer = 0;
   obsInterval = 2.2;
   msgIndex = 0;
+  State.set('messagesLeft', MESSAGES.length);
 }
 
-// ------------------------------------------------------------
-//  内部ヘルパー
-// ------------------------------------------------------------
 function _fontSize(lineCount) {
   if (lineCount <= 1) return 14;
   if (lineCount <= 2) return 13;
@@ -180,7 +137,6 @@ function _roundRect(ctx, x, y, w, h, r) {
   ctx.closePath();
 }
 
-// 上部だけ角丸（ヘッダー用）
 function _roundRectTop(ctx, x, y, w, h, r) {
   ctx.beginPath();
   ctx.moveTo(x + r, y);
