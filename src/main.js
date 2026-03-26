@@ -4,7 +4,7 @@
 import { GAME_W, GAME_H, CHAR_LIST } from './config.js';
 import { canvas, ctx, resetCtx } from './canvas.js';
 import { loadAll, getProgress } from './loader.js';
-import { getActx, playSfx } from './audio.js';
+import { getActx, setupAudio, playSfx } from './audio.js';
 import * as State from './state.js';
 
 import { player } from './entities/player.js';
@@ -18,36 +18,34 @@ import { drawHUD, drawFlash, drawTitle, drawGameOver, drawClear } from './render
 import { startGame, retry, checkCollisions } from './game.js';
 
 /**
- * ★ 修正ポイント: AudioContext を有効化する関数
- * スマホやブラウザの制限を解除するため、ユーザーの最初の操作で実行する
+ * ★ スマホ・ブラウザ制限解除用の初期化関数
+ * ユーザーが最初に画面を触った瞬間に実行される
  */
-const initAudio = () => {
-  const adx = getActx();
-  if (adx && adx.state === 'suspended') {
-    adx.resume().then(() => {
-      console.log('AudioContext resumed successfully');
-    });
-  }
-  // 一度実行すれば良いのでイベントを解除
+const initAudio = async () => {
+  // AudioContextの再開とBGMのデコードを並行して実行
+  await setupAudio();
+
+  // 一度実行したらイベントリスナーを削除して負荷を減らす
   window.removeEventListener('pointerdown', initAudio);
   window.removeEventListener('touchstart', initAudio);
   window.removeEventListener('keydown', initAudio);
+  console.log('Audio Initialized via User Gesture');
 };
 
-// 起動時、あらゆる操作をオーディオ有効化のトリガーにする
+// あらゆる入力操作をオーディオ起動のトリガーにする
 window.addEventListener('pointerdown', initAudio);
 window.addEventListener('touchstart', initAudio);
 window.addEventListener('keydown', initAudio);
 
-// 入力：クリック・タップ
+// 入力：クリック・タップ判定
 canvas.addEventListener('pointerdown', (e) => {
   e.preventDefault();
 
-  // マウス/タップ座標の計算
   const rect = canvas.getBoundingClientRect();
   const mx = (e.clientX - rect.left) * (GAME_W / rect.width);
   const my = (e.clientY - rect.top) * (GAME_H / rect.height);
 
+  // --- タイトル画面の処理 ---
   if (State.gState === 'title') {
     // キャラ選択判定
     const iconSz = 56,
@@ -55,6 +53,7 @@ canvas.addEventListener('pointerdown', (e) => {
     const totalW = CHAR_LIST.length * (iconSz + gap) - gap;
     const sx = (GAME_W - totalW) / 2;
     const iy = 170;
+
     for (let i = 0; i < CHAR_LIST.length; i++) {
       const ix = sx + i * (iconSz + gap);
       if (mx >= ix && mx <= ix + iconSz && my >= iy && my <= iy + iconSz) {
@@ -63,6 +62,7 @@ canvas.addEventListener('pointerdown', (e) => {
         return;
       }
     }
+
     // スタートボタン判定
     const btnW = 210,
       btnH = 44;
@@ -77,6 +77,7 @@ canvas.addEventListener('pointerdown', (e) => {
     return;
   }
 
+  // --- プレイ中・リトライの処理 ---
   if (State.gState === 'playing') {
     player.jump();
   } else if (State.gState === 'gameover' || State.gState === 'clear') {
@@ -84,7 +85,7 @@ canvas.addEventListener('pointerdown', (e) => {
   }
 });
 
-// 入力：キーボード
+// 入力：キーボード操作
 window.addEventListener('keydown', (e) => {
   if (State.gState === 'title') {
     if (e.code === 'ArrowLeft') {
@@ -103,10 +104,13 @@ window.addEventListener('keydown', (e) => {
   }
 });
 
-// メインループ
+/**
+ * メインループ
+ */
 function loop(now) {
   requestAnimationFrame(loop);
 
+  // --- ロード画面 ---
   if (State.gState === 'loading') {
     resetCtx();
     ctx.fillStyle = '#1a3a1a';
@@ -114,13 +118,13 @@ function loop(now) {
     ctx.font = 'bold 22px Orbitron,sans-serif';
     ctx.fillStyle = '#88ff44';
     ctx.textAlign = 'center';
-    ctx.fillText('LOADING  ' + Math.round(getProgress() * 100) + '%', GAME_W / 2, GAME_H / 2);
+    const progress = Math.round(getProgress() * 100);
+    ctx.fillText('LOADING  ' + progress + '%', GAME_W / 2, GAME_H / 2);
 
-    // ★ スマホ等で40%で止まっている場合、
-    // 「画面をタップしてね」という指示を出すと親切です
-    if (getProgress() > 0.35 && getProgress() < 1.0) {
+    // スマホユーザー向けガイド表示
+    if (progress >= 100) {
       ctx.font = '12px sans-serif';
-      ctx.fillText('Tap to Start Audio', GAME_W / 2, GAME_H / 2 + 40);
+      ctx.fillText('Tap to Start', GAME_W / 2, GAME_H / 2 + 40);
     }
     return;
   }
@@ -128,20 +132,24 @@ function loop(now) {
   const dt = Math.min((now - (State.lastTime || now)) / 1000, 0.05);
   State.set('lastTime', now);
 
-  // Update
+  // --- 更新ロジック ---
   if (State.gState === 'playing') {
     player.update(dt);
     updateObstacles(dt);
     updateClaps(dt);
     updateEffects(dt);
+
+    // コンボ・無敵時間の減衰
     if (State.comboTime > 0) State.set('comboTime', Math.max(0, State.comboTime - dt));
     if (State.invincibleTime > 0)
       State.set('invincibleTime', Math.max(0, State.invincibleTime - dt));
+
     checkCollisions();
   }
+
   if (State.gState === 'clear') updateClearPtcls(dt);
 
-  // Draw
+  // --- 描画ロジック ---
   resetCtx();
   drawBackground(dt);
   drawGround(dt);
@@ -151,20 +159,24 @@ function loop(now) {
     player.draw();
     drawTitle();
   } else {
+    // プレイ中のエンティティ描画
     claps.forEach(drawClap);
     obstacles.forEach(drawObstacle);
     player.draw();
     drawEffects();
     drawHUD();
     drawFlash();
+
     if (State.gState === 'gameover') drawGameOver();
     if (State.gState === 'clear') drawClear();
   }
 }
 
+// ループ開始
 requestAnimationFrame(loop);
 
 // アセット読み込み開始
 loadAll(() => {
+  // ロード完了後、少し待ってタイトルへ
   setTimeout(() => State.set('gState', 'title'), 200);
 });
