@@ -13,9 +13,6 @@ function rectsOverlap(ax, ay, aw, ah, bx, by, bw, bh) {
   return ax < bx + bw && ax + aw > bx && ay < by + bh && ay + ah > by;
 }
 
-/**
- * ゲームオーバー処理
- */
 export function triggerGameOver() {
   if (State.gState !== 'playing') return;
   State.set('gState', 'gameover');
@@ -29,9 +26,6 @@ export function triggerGameOver() {
   stopBgm();
 }
 
-/**
- * クリア処理
- */
 export function triggerClear() {
   if (State.gState !== 'playing') return;
   State.set('gState', 'clear');
@@ -40,9 +34,6 @@ export function triggerClear() {
   stopBgm();
 }
 
-/**
- * ゲーム開始
- */
 export async function startGame() {
   State.set('score', 0);
   State.set('combo', 0);
@@ -62,16 +53,17 @@ export async function startGame() {
   player.reset(charData || CHAR_LIST[0]);
 
   State.set('gState', 'playing');
+
+  // ★ playBgm が async になったので await で待つ
+  //    ユーザーのタップ→startGame→await playBgm→await setupAudio の
+  //    チェーンがすべてユーザー操作コールスタック内で完結するため
+  //    iOSを含むスマホで BGM が鳴る
   try {
     await playBgm();
   } catch (e) {}
 }
 
-/**
- * リトライ処理
- */
 export async function retry() {
-  // リトライ時も select 音を小さく鳴らす
   playSfx('sfxSelect', 0.5);
   setTimeout(async () => {
     stopBgm();
@@ -80,9 +72,6 @@ export async function retry() {
   }, 100);
 }
 
-/**
- * 当たり判定チェック
- */
 export function checkCollisions() {
   if (State.gState !== 'playing') return;
   const pr = player.rect();
