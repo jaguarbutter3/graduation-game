@@ -2,7 +2,7 @@
 //  game.js  ─ ゲーム進行・衝突判定ロジック
 // ============================================================
 import { PLR_W, PLR_H, CHAR_LIST } from './config.js';
-import { playSfx, playBgm, stopBgm } from './audio.js';
+import { playSfx, setupAudio, playBgm, stopBgm } from './audio.js';
 import * as State from './state.js';
 import { player } from './entities/player.js';
 import { obstacles, resetObstacles, getObstacleHitRect } from './entities/obstacle.js';
@@ -54,12 +54,12 @@ export async function startGame() {
 
   State.set('gState', 'playing');
 
-  // ★ playBgm が async になったので await で待つ
-  //    ユーザーのタップ→startGame→await playBgm→await setupAudio の
-  //    チェーンがすべてユーザー操作コールスタック内で完結するため
-  //    iOSを含むスマホで BGM が鳴る
+  // ★ スマホBGM修正：
+  //    setupAudio() でコンテキスト解除 + デコードを完全に待ってから
+  //    同期の playBgm() を呼ぶ。これが動いていた版と同じ構造。
   try {
-    await playBgm();
+    await setupAudio();
+    playBgm();
   } catch (e) {}
 }
 
