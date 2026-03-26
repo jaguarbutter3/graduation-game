@@ -16,6 +16,7 @@ export const ASSET_PATH = {
   sfxHurt: 'assets/sfx_hurt.ogg',
   sfxMagic: 'assets/sfx_magic.ogg',
   sfxSelect: 'assets/sfx_select.ogg',
+  bgm: 'assets/bgm.mp3',
 };
 
 // ------------------------------------------------------------

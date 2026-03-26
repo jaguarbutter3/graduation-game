@@ -22,7 +22,9 @@ canvas.addEventListener('pointerdown', (e) => {
   e.preventDefault();
   try {
     getActx().resume();
-  } catch {}
+  } catch {
+    // ブラウザの自動再生制限によるエラーを許容
+  }
 
   const rect = canvas.getBoundingClientRect();
   const mx = (e.clientX - rect.left) * (GAME_W / rect.width);
@@ -62,13 +64,15 @@ canvas.addEventListener('pointerdown', (e) => {
   } else if (State.gState === 'gameover' || State.gState === 'clear') {
     retry();
   }
-});
+}); // ← ここが合体して消えていたので直しました
 
 // 入力：キーボード
 window.addEventListener('keydown', (e) => {
   try {
     getActx().resume();
-  } catch {}
+  } catch {
+    // ignore
+  }
   if (State.gState === 'title') {
     if (e.code === 'ArrowLeft') {
       State.set('selectedChar', (State.selectedChar - 1 + CHAR_LIST.length) % CHAR_LIST.length);
