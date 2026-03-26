@@ -79,7 +79,7 @@ export function drawTitle() {
   ctx.fillStyle = '#ffe600';
   ctx.shadowColor = '#ff8800';
   ctx.shadowBlur = 22;
-  ctx.fillText('卒業ランナー', GAME_W / 2, 82);
+  ctx.fillText('卒業おめでとう', GAME_W / 2, 82);
   ctx.font = 'bold 17px Orbitron,sans-serif';
   ctx.fillStyle = '#fff';
   ctx.shadowBlur = 0;
@@ -119,9 +119,8 @@ export function drawTitle() {
 
   ctx.font = '900 14px "Noto Sans JP",sans-serif';
   ctx.fillStyle = 'rgba(255,255,255,0.6)';
-  ctx.fillText('← → キーでキャラ変更', GAME_W / 2, 258);
-  ctx.fillText('スペース・タップ → ゲーム開始', GAME_W / 2, 280);
-  ctx.fillText('楽器をとってクラップ！メッセージは読んで避けよう！', GAME_W / 2, 305);
+  ctx.fillText('メッセージに当たるとゲームオーバーです', GAME_W / 2, 280);
+  ctx.fillText('メッセージ避けつつ頑張って読んでね ^^', GAME_W / 2, 305);
   ctx.restore();
   drawButton(GAME_W / 2, GAME_H - 52, 'GAME START', '#44ee88');
 }
@@ -141,7 +140,7 @@ export function drawGameOver() {
   ctx.fillStyle = '#ffaaaa';
   ctx.shadowColor = '#ff0000';
   ctx.shadowBlur = 10;
-  ctx.fillText('落単決定...', GAME_W / 2, GAME_H / 2 + 4);
+  ctx.fillText('留年', GAME_W / 2, GAME_H / 2 + 4);
   ctx.font = 'bold 20px Orbitron,sans-serif';
   ctx.fillStyle = '#aaa';
   ctx.shadowBlur = 0;

@@ -16,13 +16,22 @@ export function getActx() {
 /**
  * 効果音を再生する
  */
-export function playSfx(key, vol = 0.8) {
+export function playSfx(key, vol = 0.2) {
   const a = SFX[key];
   if (!a) return; // 指定されたSEがなければ無視
   try {
     // Audio要素を複製して再生（連続再生に対応）
     const c = a.cloneNode();
-    c.volume = vol;
+    let modifier = 1.0;
+
+    if (key === 'sfxClap') {
+      modifier = 0.1;
+    }
+    if (key === 'sfxSelect') {
+      modifier = 0.1;
+    }
+
+    c.volume = Math.min(1, Math.max(0, vol * modifier));
     c.play().catch(() => {
       /* 自動再生制限などで失敗しても無視 */
     });

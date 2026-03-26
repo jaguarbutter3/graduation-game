@@ -27,12 +27,16 @@ export const GAME_H = 400;
 // ------------------------------------------------------------
 //  ゲームプレイ定数
 // ------------------------------------------------------------
+export const BPM = 125;
+export const BEAT_SEC = 60 / BPM; // 0.48秒
+export const BAR_SEC = BEAT_SEC * 4; // 1小節 (1.92秒)
+
 export const GAME_SEC = 60;
-export const SCROLL_SPD = 480;
+export const SCROLL_SPD = GAME_W / 2 / (BEAT_SEC * 1.8);
 export const GROUND_Y = 336;
 export const TILE_SZ = 64;
-export const GRAVITY = 2100;
-export const JUMP_VY = -780;
+export const GRAVITY = 2200;
+export const JUMP_VY = -800;
 
 // ------------------------------------------------------------
 //  プレイヤー
@@ -67,12 +71,6 @@ export const INSTRUMENT_COLORS = {
 
 // ------------------------------------------------------------
 //  卒業メッセージ一覧
-//  ★ここを書き換えてメッセージを追加・変更してください
-//
-//  形式:
-//  { from: '送り主', lines: ['1行目', '2行目', ...] }
-//  ・linesは最大4行推奨（それ以上は文字が小さくなります）
-//  ・fromは省略可（省略するとヘッダーなしになります）
 // ------------------------------------------------------------
 export const MESSAGES = [
   {
@@ -154,7 +152,7 @@ export const MESSAGES = [
     lines: ['じゃあまた会いましょう'],
   },
   {
-    lines: ['改めて、卒業おめでとうございます'],
+    lines: ['改めて、卒業おめでとう'],
   },
 ];
 
