@@ -4,11 +4,8 @@
 import { BGM_BINARY, SFX } from './loader.js';
 
 let _actx = null;
-export let BGM_BUFFER = null; // デコード済みのBGMデータ
+export let BGM_BUFFER = null;
 
-/**
- * AudioContextの取得 (シングルトン)
- */
 export function getActx() {
   if (!_actx) {
     _actx = new (window.AudioContext || window.webkitAudioContext)();
@@ -16,94 +13,73 @@ export function getActx() {
   return _actx;
 }
 
-/**
- * ★ ユーザー操作後に呼び出す初期化処理
- * スマホのオーディオ制限を解除し、BGMをデコードする
- */
 export async function setupAudio() {
   const ctx = getActx();
-
-  if (ctx.state === 'suspended') {
-    await ctx.resume();
-  }
-
+  if (ctx.state === 'suspended') await ctx.resume();
   if (BGM_BINARY && !BGM_BUFFER) {
     try {
-      // slice(0) でコピーを渡す
       BGM_BUFFER = await ctx.decodeAudioData(BGM_BINARY.slice(0));
-      console.log('BGM decoded and ready.');
     } catch (e) {
-      console.error('BGM decode failed:', e);
+      console.error('BGM decode error:', e);
     }
   }
 }
 
 /**
  * 効果音の再生
- * 特定のSEに対する音量モディファイアを適用して再生
  */
-export function playSfx(key, vol = 0.2) {
+export function playSfx(key, vol = 1.0) {
   const a = SFX[key];
-  if (!a) return; // 指定されたSEがなければ無視
+  if (!a) return;
 
   try {
-    // Audio要素を複製して再生（連続再生に対応）
     const c = a.cloneNode();
-    let modifier = 1.0;
+    let masterSfxVol = 0.2;
 
-    // 特定の音源がうるさすぎないように調整
-    if (key === 'sfxClap') {
-      modifier = 0.1;
-    }
-    if (key === 'sfxSelect') {
-      modifier = 0.1;
+    let relativeVol = 1.0;
+    if (key === 'sfxClap' || key === 'sfxSelect' || key === 'sfxDisappear') {
+      relativeVol = 0.5;
     }
 
-    // 最終的な音量を計算 (0.0 〜 1.0 の範囲に収める)
-    c.volume = Math.min(1, Math.max(0, vol * modifier));
+    c.volume = Math.min(1, Math.max(0, vol * masterSfxVol * relativeVol));
 
-    c.play().catch(() => {
-      /* 自動再生制限などで失敗しても無視 */
-    });
+    c.play().catch(() => {});
   } catch (e) {
     console.warn('SFX play error:', e);
   }
 }
 
-/**
- * BGMの再生 (Web Audio API を使用)
- */
 let bgmSource = null;
-export function playBgm() {
-  if (!BGM_BUFFER) return;
+export async function playBgm() {
   const ctx = getActx();
+  if (ctx.state === 'suspended') await ctx.resume();
+  if (!BGM_BUFFER && BGM_BINARY) {
+    try {
+      BGM_BUFFER = await ctx.decodeAudioData(BGM_BINARY.slice(0));
+    } catch (e) {
+      return;
+    }
+  }
+  if (!BGM_BUFFER) return;
 
-  // 既に再生中なら止める
   stopBgm();
-
   bgmSource = ctx.createBufferSource();
   bgmSource.buffer = BGM_BUFFER;
   bgmSource.loop = true;
 
   const gainNode = ctx.createGain();
-  gainNode.gain.value = 0.4; // 全体的なBGM音量
+  gainNode.gain.value = 0.4; // BGMの音量
 
   bgmSource.connect(gainNode);
   gainNode.connect(ctx.destination);
-
   bgmSource.start(0);
 }
 
-/**
- * BGMの停止
- */
 export function stopBgm() {
   if (bgmSource) {
     try {
       bgmSource.stop();
-    } catch (e) {
-      // 無視
-    }
+    } catch (e) {}
     bgmSource = null;
   }
 }

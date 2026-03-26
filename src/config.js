@@ -9,11 +9,12 @@ export const ASSET_PATH = {
   imgCharacters: 'assets/spritesheet-characters-default.png',
   imgTiles: 'assets/spritesheet-tiles-default.png',
   imgBg: 'assets/spritesheet-backgrounds-default.png',
+  sfxDisappear: 'assets/sfx_disappear.ogg',
   sfxJump: 'assets/sfx_jump.ogg',
   sfxJump2: 'assets/sfx_jump-high.ogg',
   sfxClap: 'assets/clap.wav',
   sfxHurt: 'assets/sfx_hurt.ogg',
-  sfxMagic: 'assets/sfx_magic.ogg',
+  sfxMagic: 'assets/sfx_magic.wav',
   sfxSelect: 'assets/sfx_select.ogg',
   bgm: 'assets/bgm.mp3',
 };

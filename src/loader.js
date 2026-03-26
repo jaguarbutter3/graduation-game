@@ -1,25 +1,36 @@
-// loader.js
+// ============================================================
+//  loader.js  ─ アセットの非同期ロード管理
+// ============================================================
 import { ASSET_PATH } from './config.js';
 
 export const IMG = {};
 export const SFX = {};
-export let BGM_BINARY = null; // デコード前の生データ
+export let BGM_BINARY = null;
 
 let loadCount = 0;
 let loadTotal = 0;
 
 export function loadAll(cb) {
   const imgKeys = ['imgCharacters', 'imgTiles', 'imgBg'];
-  const sfxKeys = ['sfxJump', 'sfxJump2', 'sfxClap', 'sfxHurt', 'sfxMagic', 'sfxSelect'];
+  const sfxKeys = [
+    'sfxDisappear',
+    'sfxJump',
+    'sfxJump2',
+    'sfxClap',
+    'sfxHurt',
+    'sfxMagic',
+    'sfxSelect',
+  ];
 
-  loadTotal = imgKeys.length + sfxKeys.length + 1;
+  loadTotal = imgKeys.length + 1;
 
   function done() {
     loadCount++;
-    if (loadCount >= loadTotal) cb();
+    if (loadCount >= loadTotal) {
+      cb();
+    }
   }
 
-  // 画像ロード
   imgKeys.forEach((k) => {
     const img = new Image();
     img.onload = done;
@@ -28,18 +39,13 @@ export function loadAll(cb) {
     IMG[k] = img;
   });
 
-  // 効果音ロード (スマホ対策: canplaythroughを待たずにsrcセットだけでdoneにする)
   sfxKeys.forEach((k) => {
     const a = new Audio();
     a.src = ASSET_PATH[k];
-    // スマホだとロード完了イベントが来ないことがあるので、
-    // エラー以外は即座に次へ進めるか、preloadをnoneにする
     a.preload = 'auto';
     SFX[k] = a;
-    done();
   });
 
-  // BGMロード (fetchして生データだけ確保)
   fetch(ASSET_PATH.bgm)
     .then((res) => res.arrayBuffer())
     .then((buf) => {
@@ -47,11 +53,10 @@ export function loadAll(cb) {
       done();
     })
     .catch(() => {
-      console.warn('BGM load failed');
       done();
     });
 }
 
 export function getProgress() {
-  return loadTotal === 0 ? 0 : loadCount / loadTotal;
+  return loadTotal === 0 ? 0 : Math.min(loadCount / loadTotal, 1.0);
 }
