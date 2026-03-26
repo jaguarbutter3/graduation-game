@@ -9,12 +9,9 @@ export const SFX = {};
 let loadCount = 0;
 let loadTotal = 0;
 
-/**
- * 全アセットをロードし、完了したらコールバックを呼ぶ
- * @param {Function} cb - ロード完了時のコールバック
- */
 export function loadAll(cb) {
-  const imgKeys = ['imgCharacters', 'imgEnemies', 'imgTiles', 'imgBg'];
+  // imgEnemies は削除（メッセージカードはCanvas描画のため不要）
+  const imgKeys = ['imgCharacters', 'imgTiles', 'imgBg'];
   const sfxKeys = ['sfxJump', 'sfxJump2', 'sfxClap', 'sfxHurt', 'sfxMagic', 'sfxSelect'];
   loadTotal = imgKeys.length + sfxKeys.length;
 
@@ -45,7 +42,6 @@ export function loadAll(cb) {
   });
 }
 
-/** ロード進捗を 0〜1 で返す */
 export function getProgress() {
   return loadTotal === 0 ? 0 : loadCount / loadTotal;
 }

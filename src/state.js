@@ -1,14 +1,9 @@
 // ============================================================
 //  state.js  ─ ゲーム全体で共有する可変状態
-//
-//  import して直接読み書きする（シンプルな共有オブジェクト）
-//  例: import * as State from '../state.js';
-//      State.score += 100;
 // ============================================================
-import { GAME_SEC, CHAR_LIST, CHR_FRAMES } from './config.js';
+import { GAME_SEC, CHAR_LIST } from './config.js';
 
-// ゲーム進行
-export let gState = 'loading'; // loading | title | playing | gameover | clear
+export let gState = 'loading';
 export let score = 0;
 export let timeLeft = GAME_SEC;
 export let combo = 0;
@@ -16,19 +11,15 @@ export let comboTime = 0;
 export let flashAlpha = 0;
 export let lastTime = 0;
 
-// 背景スクロールオフセット
 export let bgFar = 0;
 export let bgNear = 0;
 export let bgGround = 0;
 
-// キャラ選択
 export let selectedChar = 1; // green
-export let CHR = CHR_FRAMES[CHAR_LIST[1]];
-
-// タイマー
+export let CHR = CHAR_LIST[1].CHR;
 export let countdownId = null;
+export let invincibleTime = 0;
 
-// ------ セッター（ESモジュールはプリミティブの直接代入ができないため） ------
 export function set(key, value) {
   switch (key) {
     case 'gState':
@@ -45,6 +36,9 @@ export function set(key, value) {
       break;
     case 'comboTime':
       comboTime = value;
+      break;
+    case 'invincibleTime':
+      invincibleTime = value;
       break;
     case 'flashAlpha':
       flashAlpha = value;
@@ -63,7 +57,9 @@ export function set(key, value) {
       break;
     case 'selectedChar':
       selectedChar = value;
-      CHR = CHR_FRAMES[CHAR_LIST[value]];
+      if (CHAR_LIST[value]) {
+        CHR = CHAR_LIST[value].CHR;
+      }
       break;
     case 'countdownId':
       countdownId = value;

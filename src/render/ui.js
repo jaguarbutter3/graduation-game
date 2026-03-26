@@ -1,7 +1,7 @@
 // ============================================================
 //  render/ui.js  ─ HUD・タイトル・ゲームオーバー・クリア画面
 // ============================================================
-import { GAME_W, GAME_H, CHAR_LIST, CHAR_LABELS, CHR_FRAMES } from '../config.js';
+import { GAME_W, GAME_H, CHAR_LIST } from '../config.js';
 import { ctx, roundRect, drawSprite } from '../canvas.js';
 import * as State from '../state.js';
 import { drawClearPtcls } from './effects.js';
@@ -114,7 +114,8 @@ export function drawTitle() {
   const totalW = CHAR_LIST.length * (iconSz + gap) - gap;
   const sx = (GAME_W - totalW) / 2;
 
-  CHAR_LIST.forEach((col, i) => {
+  CHAR_LIST.forEach((charData, i) => {
+    // 引数名を分かりやすく charData に変更
     const ix = sx + i * (iconSz + gap);
     const iy = 170;
     const isSelected = i === State.selectedChar;
@@ -130,14 +131,16 @@ export function drawTitle() {
       ctx.restore();
     }
 
-    drawSprite('imgCharacters', CHR_FRAMES[col]['idle'], ix, iy, iconSz, iconSz);
+    // ★ 修正ポイント1: 直接 charData.CHR.idle を参照する
+    drawSprite('imgCharacters', charData.CHR.idle, ix, iy, iconSz, iconSz);
 
     ctx.save();
     ctx.font = '900 11px "Noto Sans JP",sans-serif';
     ctx.fillStyle = isSelected ? '#ffe600' : '#ccc';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
-    ctx.fillText(CHAR_LABELS[i], ix + iconSz / 2, iy + iconSz + 4);
+    // ★ 修正ポイント2: インデックスではなく .label を表示する
+    ctx.fillText(charData.label, ix + iconSz / 2, iy + iconSz + 4);
     ctx.restore();
   });
 
@@ -145,7 +148,7 @@ export function drawTitle() {
   ctx.fillStyle = 'rgba(255,255,255,0.6)';
   ctx.fillText('← → キーでキャラ変更', GAME_W / 2, 258);
   ctx.fillText('スペース・タップ → ゲーム開始', GAME_W / 2, 280);
-  ctx.fillText('コインに触れるとクラップ！60秒走りきれば卒業！', GAME_W / 2, 305);
+  ctx.fillText('楽器をとってクラップ！メッセージは読んで避けよう！', GAME_W / 2, 305);
   ctx.restore();
 
   drawButton(GAME_W / 2, GAME_H - 52, 'GAME START', '#44ee88');

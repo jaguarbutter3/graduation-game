@@ -1,14 +1,13 @@
 // ============================================================
-//  config.js  ─ 定数・アセットパス・スプライト座標
-//  ここを編集すればゲームの見た目・難易度・アセットを一括変更できます
+//  config.js  ─ 定数・アセットパス・スプライト座標・ゲームコンテンツ
+//  ★ここを編集すれば見た目・難易度・メッセージ内容を一括変更できます
 // ============================================================
 
 // ------------------------------------------------------------
-//  アセットパス  （assets/ フォルダからの相対パス）
+//  アセットパス
 // ------------------------------------------------------------
 export const ASSET_PATH = {
   imgCharacters: 'assets/spritesheet-characters-default.png',
-  imgEnemies: 'assets/spritesheet-enemies-default.png',
   imgTiles: 'assets/spritesheet-tiles-default.png',
   imgBg: 'assets/spritesheet-backgrounds-default.png',
   sfxJump: 'assets/sfx_jump.ogg',
@@ -28,47 +27,92 @@ export const GAME_H = 400;
 // ------------------------------------------------------------
 //  ゲームプレイ定数
 // ------------------------------------------------------------
-export const GAME_SEC = 60; // 制限時間（秒）
-export const SCROLL_SPD = 360; // スクロール速度 px/s（BPM120固定）
-
-export const GROUND_Y = 336; // 地面タイル上端 Y
-export const TILE_SZ = 64; // タイル1枚のサイズ
-
-export const GRAVITY = 1900; // 重力加速度 px/s²
-export const JUMP_VY = -700; // ジャンプ初速 px/s
+export const GAME_SEC = 60;
+export const SCROLL_SPD = 480;
+export const GROUND_Y = 336;
+export const TILE_SZ = 64;
+export const GRAVITY = 2100;
+export const JUMP_VY = -780;
 
 // ------------------------------------------------------------
 //  プレイヤー
 // ------------------------------------------------------------
-export const PLR_W = 46; // 当たり判定 幅
-export const PLR_H = 50; // 当たり判定 高さ
-export const PLR_DRAW = 72; // 描画サイズ（正方形）
+export const PLR_W = 46;
+export const PLR_H = 50;
+export const PLR_DRAW = 72;
 
 // ------------------------------------------------------------
-//  クラップアイテム（コイン）
+//  楽器アイテム（旧：クラップコイン）
 // ------------------------------------------------------------
-export const COIN_DRAW = 44; // 描画サイズ
-export const COIN_HIT = 30; // 当たり判定サイズ
-export const CLAP_INT = 0.9; // スポーン間隔（秒）
-export const CLAP_YS = [
-  // 出現高さのパターン（地上・中段・上段）
-  GROUND_Y - 30 - 8,
-  GROUND_Y - 105,
-  GROUND_Y - 190,
+export const ITEM_DRAW = 48;
+export const ITEM_HIT = 34;
+export const ITEM_INT = 0.95;
+export const ITEM_YS = [GROUND_Y - 34 - 8, GROUND_Y - 108, GROUND_Y - 190];
+
+export const INSTRUMENTS = [
+  { label: 'guitar' },
+  { label: 'bass' },
+  { label: 'keyboard' },
+  { label: 'drums' },
+  { label: 'mic' },
 ];
 
-// ------------------------------------------------------------
-//  障害物（スライム）
-// ------------------------------------------------------------
-export const OBS_DRAW = 56; // 描画サイズ
-export const OBS_HIT_W = 40; // 当たり判定 幅
-export const OBS_HIT_H = 46; // 当たり判定 高さ
+export const INSTRUMENT_COLORS = {
+  guitar: { body: '#e05c1a', glow: '#ff8844' },
+  bass: { body: '#1a6be0', glow: '#4499ff' },
+  keyboard: { body: '#cc44cc', glow: '#ff88ff' },
+  drums: { body: '#cc8800', glow: '#ffcc00' },
+  mic: { body: '#22bb88', glow: '#44ffbb' },
+};
 
 // ------------------------------------------------------------
-//  スプライト座標定義（XML実測値）
+//  卒業メッセージ一覧
+//  ★ここを書き換えてメッセージを追加・変更してください
+//
+//  形式:
+//  { from: '送り主', lines: ['1行目', '2行目', ...] }
+//  ・linesは最大4行推奨（それ以上は文字が小さくなります）
+//  ・fromは省略可（省略するとヘッダーなしになります）
 // ------------------------------------------------------------
+export const MESSAGES = [
+  {
+    from: '〇〇より',
+    lines: ['ここにメッセージを', '入れてください'],
+  },
+  {
+    from: '△△より',
+    lines: ['プレースホルダー', '2つ目のメッセージ', '3行目も入ります'],
+  },
+  {
+    from: '□□より',
+    lines: ['短いメッセージ'],
+  },
+  {
+    from: '◇◇より',
+    lines: ['4行メッセージの', 'テスト用です', '長いカードほど', '避けにくくなります'],
+  },
+  {
+    from: '★★より',
+    lines: ['プレースホルダー', 'その5'],
+  },
+];
 
-// キャラクター 128×128  spritesheet-characters-default.png
+// カードデザイン定数
+export const MSG_CARD_W = 180;
+export const MSG_LINE_H = 22;
+export const MSG_PAD_Y = 12;
+export const MSG_HEADER_H = 28;
+export const MSG_CORNER_R = 10;
+export const MSG_HIT_INSET = 8;
+
+export function calcCardH(msg) {
+  const headerH = msg.from ? MSG_HEADER_H : 0;
+  return headerH + msg.lines.length * MSG_LINE_H + MSG_PAD_Y * 2;
+}
+
+// ------------------------------------------------------------
+//  スプライト座標
+// ------------------------------------------------------------
 export const CHR_FRAMES = {
   beige: {
     idle: { x: 645, y: 0, w: 128, h: 128 },
@@ -106,25 +150,21 @@ export const CHR_FRAMES = {
     hit: { x: 645, y: 645, w: 128, h: 128 },
   },
 };
-export const CHAR_LIST = ['beige', 'green', 'pink', 'purple', 'yellow'];
-export const CHAR_LABELS = ['ベージュ', 'グリーン', 'ピンク', 'パープル', 'イエロー'];
+export const CHAR_LIST = [
+  { label: 'ベージュ', CHR: CHR_FRAMES.beige },
+  { label: 'グリーン', CHR: CHR_FRAMES.green },
+  { label: 'ピンク', CHR: CHR_FRAMES.pink },
+  { label: 'パープル', CHR: CHR_FRAMES.purple },
+  { label: 'イエロー', CHR: CHR_FRAMES.yellow },
+];
 
-// 敵スライム 64×64  spritesheet-enemies-default.png
-export const ENM = {
-  walk_a: { x: 260, y: 325, w: 64, h: 64 },
-  walk_b: { x: 325, y: 325, w: 64, h: 64 },
-};
-
-// タイル 64×64  spritesheet-tiles-default.png
 export const TILE = {
-  top: { x: 715, y: 585, w: 64, h: 64 }, // terrain_grass_block_top
-  mid: { x: 780, y: 520, w: 64, h: 64 }, // 地面中段タイル
-  coin: { x: 0, y: 130, w: 64, h: 64 }, // coin_gold
+  top: { x: 715, y: 585, w: 64, h: 64 },
+  mid: { x: 780, y: 520, w: 64, h: 64 },
 };
 
-// 背景 256×256  spritesheet-backgrounds-default.png
 export const BG = {
-  sky: { x: 257, y: 771, w: 256, h: 256 }, // background_solid_sky
-  far: { x: 514, y: 0, w: 256, h: 256 }, // background_color_hills（遠景）
-  near: { x: 0, y: 257, w: 256, h: 256 }, // background_color_trees（近景）
+  sky: { x: 257, y: 771, w: 256, h: 256 },
+  far: { x: 514, y: 0, w: 256, h: 256 },
+  near: { x: 0, y: 257, w: 256, h: 256 },
 };

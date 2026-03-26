@@ -2,7 +2,7 @@
 //  entities/player.js  ─ プレイヤーの状態・更新・描画
 // ============================================================
 import { GROUND_Y, GRAVITY, JUMP_VY, PLR_W, PLR_H, PLR_DRAW } from '../config.js';
-import { drawSprite } from '../canvas.js';
+import { ctx, drawSprite } from '../canvas.js';
 import { playSfx } from '../audio.js';
 import * as State from '../state.js';
 import { spawnRing } from '../render/effects.js';
@@ -95,6 +95,9 @@ export const player = {
   },
 
   draw() {
+    if (State.invincibleTime > 0 && Math.floor(Date.now() / 50) % 2 === 0) {
+      ctx.globalAlpha = 0.5; // 半透明にする
+    }
     // ヒット点滅（偶数フレームは非表示）
     if (this.hitTimer > 0 && Math.floor(this.hitTimer * 12) % 2 === 0) return;
     const src = State.CHR[this.animKey];
@@ -104,6 +107,7 @@ export const player = {
     const cx = this.x + PLR_W / 2;
     const cy = this.y + PLR_H / 2;
     drawSprite('imgCharacters', src, cx - dw / 2, cy - dh / 2, dw, dh);
+    ctx.globalAlpha = 1.0;
   },
 
   /** 当たり判定矩形を返す */

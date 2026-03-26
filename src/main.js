@@ -2,7 +2,7 @@
 //  main.js  ─ メインループ・入力ハンドラ・起動
 // ============================================================
 import { GAME_W, GAME_H, CHAR_LIST } from './config.js';
-import { canvas, ctx, DPR, resetCtx } from './canvas.js';
+import { canvas, ctx, resetCtx } from './canvas.js';
 import { loadAll, getProgress } from './loader.js';
 import { getActx, playSfx } from './audio.js';
 import * as State from './state.js';
@@ -15,82 +15,88 @@ import { drawBackground, drawGround } from './render/background.js';
 import { updateEffects, drawEffects, updateClearPtcls } from './render/effects.js';
 import { drawHUD, drawFlash, drawTitle, drawGameOver, drawClear } from './render/ui.js';
 
-import { startGame, retry, checkCollisions, stopCountdown } from './game.js';
+import { startGame, retry, checkCollisions } from './game.js';
 
-// ============================================================
-//  入力
-// ============================================================
-function getCanvasXY(e) {
-  const r = canvas.getBoundingClientRect();
-  const sx = GAME_W / r.width,
-    sy = GAME_H / r.height;
-  const cx = e.clientX ?? e.touches?.[0]?.clientX ?? 0;
-  const cy = e.clientY ?? e.touches?.[0]?.clientY ?? 0;
-  return [(cx - r.left) * sx, (cy - r.top) * sy];
-}
-
+// 入力：クリック・タップ
 canvas.addEventListener('pointerdown', (e) => {
   e.preventDefault();
   try {
     getActx().resume();
-  } catch (err) {}
+  } catch {}
+
+  const rect = canvas.getBoundingClientRect();
+  const mx = (e.clientX - rect.left) * (GAME_W / rect.width);
+  const my = (e.clientY - rect.top) * (GAME_H / rect.height);
+
   if (State.gState === 'title') {
-    startGame();
+    // キャラ選択判定
+    const iconSz = 56,
+      gap = 14;
+    const totalW = CHAR_LIST.length * (iconSz + gap) - gap;
+    const sx = (GAME_W - totalW) / 2;
+    const iy = 170;
+    for (let i = 0; i < CHAR_LIST.length; i++) {
+      const ix = sx + i * (iconSz + gap);
+      if (mx >= ix && mx <= ix + iconSz && my >= iy && my <= iy + iconSz) {
+        State.set('selectedChar', i);
+        playSfx('sfxSelect', 0.6);
+        return;
+      }
+    }
+    // スタートボタン判定
+    const btnW = 210,
+      btnH = 44;
+    if (
+      mx >= GAME_W / 2 - btnW / 2 &&
+      mx <= GAME_W / 2 + btnW / 2 &&
+      my >= GAME_H - 52 - btnH / 2 &&
+      my <= GAME_H - 52 + btnH / 2
+    ) {
+      startGame();
+    }
     return;
   }
+
   if (State.gState === 'playing') {
     player.jump();
-    return;
-  }
-  if (State.gState === 'gameover' || State.gState === 'clear') {
+  } else if (State.gState === 'gameover' || State.gState === 'clear') {
     retry();
   }
 });
 
+// 入力：キーボード
 window.addEventListener('keydown', (e) => {
-  if (e.code === 'Space' || e.code === 'ArrowUp') {
-    e.preventDefault();
-    try {
-      getActx().resume();
-    } catch (err) {}
-    if (State.gState === 'title') {
-      startGame();
-      return;
-    }
-    if (State.gState === 'playing') {
-      player.jump();
-      return;
-    }
-    if (State.gState === 'gameover' || State.gState === 'clear') {
-      retry();
-    }
-  }
+  try {
+    getActx().resume();
+  } catch {}
   if (State.gState === 'title') {
     if (e.code === 'ArrowLeft') {
       State.set('selectedChar', (State.selectedChar - 1 + CHAR_LIST.length) % CHAR_LIST.length);
       playSfx('sfxSelect', 0.4);
-    }
-    if (e.code === 'ArrowRight') {
+    } else if (e.code === 'ArrowRight') {
       State.set('selectedChar', (State.selectedChar + 1) % CHAR_LIST.length);
       playSfx('sfxSelect', 0.4);
+    } else if (e.code === 'Space' || e.code === 'Enter') {
+      startGame();
     }
+  } else if (State.gState === 'playing') {
+    if (e.code === 'Space' || e.code === 'ArrowUp') player.jump();
+  } else {
+    if (e.code === 'Space' || e.code === 'Enter') retry();
   }
 });
 
-// ============================================================
-//  メインループ
-// ============================================================
+// メインループ
 function loop(now) {
   requestAnimationFrame(loop);
 
-  // ローディング画面
   if (State.gState === 'loading') {
+    resetCtx();
     ctx.fillStyle = '#1a3a1a';
     ctx.fillRect(0, 0, GAME_W, GAME_H);
     ctx.font = 'bold 22px Orbitron,sans-serif';
     ctx.fillStyle = '#88ff44';
     ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
     ctx.fillText('LOADING  ' + Math.round(getProgress() * 100) + '%', GAME_W / 2, GAME_H / 2);
     return;
   }
@@ -98,20 +104,22 @@ function loop(now) {
   const dt = Math.min((now - (State.lastTime || now)) / 1000, 0.05);
   State.set('lastTime', now);
 
-  // ---- update ----
+  // Update
   if (State.gState === 'playing') {
     player.update(dt);
     updateObstacles(dt);
     updateClaps(dt);
     updateEffects(dt);
     if (State.comboTime > 0) State.set('comboTime', Math.max(0, State.comboTime - dt));
+    // 無敵タイマーの更新
+    if (State.invincibleTime > 0)
+      State.set('invincibleTime', Math.max(0, State.invincibleTime - dt));
     checkCollisions();
   }
   if (State.gState === 'clear') updateClearPtcls(dt);
 
-  // ---- draw ----
-  resetCtx(); // フレーム先頭で ctx ステートをリセット（残像防止）
-
+  // Draw
+  resetCtx();
   drawBackground(dt);
   drawGround(dt);
 
@@ -119,28 +127,20 @@ function loop(now) {
     player.animKey = 'idle';
     player.draw();
     drawTitle();
-    return;
+  } else {
+    updateClaps(0); // 描画位置更新
+    claps.forEach(drawClap);
+    obstacles.forEach(drawObstacle);
+    player.draw();
+    drawEffects();
+    drawHUD();
+    drawFlash();
+    if (State.gState === 'gameover') drawGameOver();
+    if (State.gState === 'clear') drawClear();
   }
-
-  claps.forEach((c) => drawClap(c));
-  obstacles.forEach((o) => drawObstacle(o));
-  player.draw();
-  drawEffects();
-  drawHUD();
-  drawFlash();
-
-  if (State.gState === 'gameover') drawGameOver();
-  if (State.gState === 'clear') drawClear();
 }
 
-// ============================================================
-//  起動
-// ============================================================
-requestAnimationFrame(loop); // ローディング画面を即表示
-
+requestAnimationFrame(loop);
 loadAll(() => {
-  console.log('アセットロード完了');
-  setTimeout(() => {
-    State.set('gState', 'title');
-  }, 200);
+  setTimeout(() => State.set('gState', 'title'), 200);
 });
