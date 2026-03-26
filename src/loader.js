@@ -49,7 +49,7 @@ export function loadAll(cb) {
   fetch(ASSET_PATH.bgm)
     .then((res) => res.arrayBuffer())
     .then((buf) => {
-      BGM_BINARY = buf;
+      BGM_BINARY = new Uint8Array(buf);
       done();
     })
     .catch(() => {

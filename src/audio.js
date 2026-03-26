@@ -33,7 +33,7 @@ export async function setupAudio() {
   // BGMデコード（未実施の場合のみ）
   if (BGM_BINARY && !BGM_BUFFER) {
     try {
-      BGM_BUFFER = await ctx.decodeAudioData(BGM_BINARY.slice(0));
+      BGM_BUFFER = await ctx.decodeAudioData(BGM_BINARY.buffer.slice(0));
       console.log('BGM decoded successfully');
     } catch (e) {
       console.error('BGM decode error:', e);
