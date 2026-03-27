@@ -4,7 +4,7 @@
 import { GAME_W, GAME_H, CHAR_LIST } from './config.js';
 import { canvas, ctx, resetCtx } from './canvas.js';
 import { loadAll, getProgress } from './loader.js';
-import { getActx, setupAudio, playSfx } from './audio.js';
+import { getActx, playSfx } from './audio.js';
 import * as State from './state.js';
 
 import { player } from './entities/player.js';
@@ -17,19 +17,31 @@ import { drawHUD, drawFlash, drawTitle, drawGameOver, drawClear } from './render
 
 import { startGame, retry, checkCollisions } from './game.js';
 
-const initAudio = async () => {
-  await setupAudio();
-  window.removeEventListener('pointerdown', initAudio);
-  window.removeEventListener('touchstart', initAudio);
-  window.removeEventListener('keydown', initAudio);
-};
+// ============================================================
+//  内部ヘルパー：ユーザー操作コンテキスト内で AudioContext を確実に起動
+//  （iOS は操作の同期コンテキスト外だと resume が無効になるため、
+//    await を挟む前に resume + ダミー再生を済ませておく）
+// ============================================================
+async function unlockAudio() {
+  const actx = getActx();
+  if (actx.state === 'suspended') {
+    await actx.resume();
+  }
+  // iOS / Android のオーディオロックを解除するダミー再生
+  const dummy = actx.createBufferSource();
+  dummy.buffer = actx.createBuffer(1, 1, 22050);
+  dummy.connect(actx.destination);
+  dummy.start(0);
+}
 
-window.addEventListener('pointerdown', initAudio);
-window.addEventListener('touchstart', initAudio);
-window.addEventListener('keydown', initAudio);
-
+// ============================================================
+//  Canvas タップ／クリック
+// ============================================================
 canvas.addEventListener('pointerdown', async (e) => {
   e.preventDefault();
+
+  // ユーザー操作の同期コンテキスト内で AudioContext を解除
+  await unlockAudio();
 
   const rect = canvas.getBoundingClientRect();
   const mx = (e.clientX - rect.left) * (GAME_W / rect.width);
@@ -59,7 +71,7 @@ canvas.addEventListener('pointerdown', async (e) => {
       my >= GAME_H - 52 - btnH / 2 &&
       my <= GAME_H - 52 + btnH / 2
     ) {
-      playSfx('sfxSelect'); // スタート音
+      playSfx('sfxSelect');
       await startGame();
     }
     return;
@@ -68,10 +80,13 @@ canvas.addEventListener('pointerdown', async (e) => {
   if (State.gState === 'playing') {
     player.jump();
   } else if (State.gState === 'gameover' || State.gState === 'clear') {
-    await retry(); // リトライ音は game.js 側で鳴る
+    await retry();
   }
 });
 
+// ============================================================
+//  キーボード入力
+// ============================================================
 window.addEventListener('keydown', async (e) => {
   if (State.gState === 'title') {
     if (e.code === 'ArrowLeft' || e.code === 'ArrowRight') {
@@ -82,6 +97,7 @@ window.addEventListener('keydown', async (e) => {
       );
       playSfx('sfxSelect', 0.4);
     } else if (e.code === 'Space' || e.code === 'Enter') {
+      await unlockAudio();
       playSfx('sfxSelect', 1.0);
       await startGame();
     }
@@ -94,6 +110,9 @@ window.addEventListener('keydown', async (e) => {
   }
 });
 
+// ============================================================
+//  メインループ
+// ============================================================
 function loop(now) {
   requestAnimationFrame(loop);
 
