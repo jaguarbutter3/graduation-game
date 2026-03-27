@@ -22,7 +22,8 @@ export function loadAll(cb) {
     'sfxSelect',
   ];
 
-  loadTotal = imgKeys.length + 1;
+  // 画像3 + SFX7 + BGM1 = 11 すべてカウント
+  loadTotal = imgKeys.length + sfxKeys.length + 1;
 
   function done() {
     loadCount++;
@@ -31,25 +32,37 @@ export function loadAll(cb) {
     }
   }
 
+  // 画像ロード
   imgKeys.forEach((k) => {
     const img = new Image();
     img.onload = done;
-    img.onerror = done;
+    img.onerror = done; // 失敗しても進める
     img.src = ASSET_PATH[k];
     IMG[k] = img;
   });
 
+  // SFX ロード（canplaythrough で完了とみなす）
   sfxKeys.forEach((k) => {
     const a = new Audio();
-    a.src = ASSET_PATH[k];
     a.preload = 'auto';
+
+    const onReady = () => {
+      a.removeEventListener('canplaythrough', onReady);
+      a.removeEventListener('error', onReady);
+      done();
+    };
+    a.addEventListener('canplaythrough', onReady, { once: true });
+    a.addEventListener('error', onReady, { once: true }); // 失敗しても進める
+
+    a.src = ASSET_PATH[k];
     SFX[k] = a;
   });
 
+  // BGM バイナリ取得
   fetch(ASSET_PATH.bgm)
     .then((res) => res.arrayBuffer())
     .then((buf) => {
-      BGM_BINARY = buf;
+      BGM_BINARY = buf; // ArrayBuffer のまま保持
       done();
     })
     .catch(() => {
